@@ -31,7 +31,10 @@ import java.awt.event.*; //to allow for event listener on screen resize
 //------------------------------------------------------------------------
 
 //used to switch between application states
-int systemMode = 0; /* Modes: 0 = system stopped/control panel setings / 10 = gui / 20 = help guide */
+int systemMode = -10; /* Modes: -10 = intro sequence; 0 = system stopped/control panel setings; 10 = gui; 20 = help guide */
+
+boolean hasIntroAnimation = false;
+PImage cog;
 
 //choose where to get the EEG data
 final int DATASOURCE_NORMAL = 3;  //looking for signal from OpenBCI board via Serial/COM port, no Aux data
@@ -100,12 +103,6 @@ String serial_output_portName = "/dev/tty.usbmodem1411";  //must edit this based
 Serial serial_output;
 int serial_output_baud = 115200; //baud rate from the Arduino
 
-//fft constants
-int Nfft = 256; //set resolution of the FFT.  Use N=256 for normal, N=512 for MU waves
-FFT fftBuff[] = new FFT[nchan];   //from the minim library
-float[] smoothFac = new float[]{0.75, 0.9, 0.95, 0.98, 0.0, 0.5};
-int smoothFac_ind = 0;    //initial index into the smoothFac array
-
 //Control Panel for (re)configuring system settings
 Button controlPanelCollapser;
 PlotFontInfo fontInfo;
@@ -160,8 +157,8 @@ void setup() {
   widthOfLastScreen = width; //for screen resizing (Thank's Tao)
   heightOfLastScreen = height;
 
-
   setupContainers();
+  //setupGUIWidgets(); 
 
   //V1 FONTS
   f1 = createFont("fonts/Raleway-SemiBold.otf", 16);
@@ -204,6 +201,7 @@ void setup() {
   //Once the hardware is synchronized, the main GUI is drawn and the user switches over to the main GUI.
 
   logo = loadImage("logo2.png");
+  cog = loadImage("cog_1024x1024.png");
 
   playground = new Playground(navBarHeight);
 
@@ -228,11 +226,10 @@ void setup() {
 //======================== DRAW LOOP =============================//
 
 void draw() {
-  
+
   drawLoop_counter++; //signPost("10");
   systemUpdate(); //signPost("20");
   systemDraw();   //signPost("30");
-
 }
 
 //====================== END-OF-DRAW ==========================//
@@ -323,6 +320,7 @@ void initSystem() {
 
   //initilize the GUI
   initializeGUI();
+  setupGUIWidgets(); //####
 
   //final config
   // setBiasState(openBCI.isBiasAuto);
@@ -401,7 +399,13 @@ void systemUpdate() { // for updating data values and variables
         // }
         if ((millis() - timeOfGUIreinitialize) > reinitializeGUIdelay) { //wait 1 second for GUI to reinitialize
           try {
+
+            //-----------------------------------------------------------            
+            //-----------------------------------------------------------
             gui.update(dataProcessing.data_std_uV, data_elec_imp_ohm);
+            updateGUIWidgets(); //####
+            //-----------------------------------------------------------
+            //-----------------------------------------------------------
           } 
           catch (Exception e) {
             println(e.getMessage());
@@ -442,6 +446,9 @@ void systemUpdate() { // for updating data values and variables
     }
 
     //re-initialize GUI if screen has been resized and it's been more than 1/2 seccond (to prevent reinitialization of GUI from happening too often)
+    if(screenHasBeenResized){
+      GUIWidgets_screenResized(width, height);
+    }
     if (screenHasBeenResized == true && (millis() - timeOfLastScreenResize) > reinitializeGUIdelay) {
       screenHasBeenResized = false;
       println("systemUpdate: reinitializing GUI");
@@ -460,6 +467,7 @@ void systemDraw() { //for drawing to the screen
 
   //redraw the screen...not every time, get paced by when data is being plotted    
   background(bgColor);  //clear the screen
+  //background(255);  //clear the screen
 
   if (systemMode == 10) {
     int drawLoopCounter_thresh = 100;
@@ -493,7 +501,14 @@ void systemDraw() { //for drawing to the screen
         noStroke();
         rect(0, 0, width, navBarHeight);
         popStyle();
+
+        //----------------------------
         gui.draw(); //draw the GUI
+        //updateGUIWidgets(); //####
+        drawGUIWidgets();
+
+        //----------------------------
+
         // playground.draw();
       } 
       catch (Exception e) {
@@ -506,11 +521,10 @@ void systemDraw() { //for drawing to the screen
       println("OpenBCI_GUI: systemDraw: reinitializing GUI after resize... not drawing GUI");
     }
 
-    playground.draw();
-    dataProcessing_user.draw();
-    drawContainers();
-    
 
+    dataProcessing_user.draw();
+    //playground.draw();
+    drawContainers();
   } else { //systemMode != 10
     //still print title information about fps
     surface.setTitle(int(frameRate) + " fps — OpenBCI GUI");
@@ -547,4 +561,37 @@ void systemDraw() { //for drawing to the screen
   // use commented code below to verify frameRate and check latency
   // println("Time since start: " + millis() + " || Time since last frame: " + str(millis()-timeOfLastFrame));
   // timeOfLastFrame = millis();
+
+  if (systemMode == -10) {
+    //intro animation sequence
+    if (hasIntroAnimation) {
+      introAnimation();
+    } else {
+      systemMode = 0;
+    }
+  }
+}
+
+void introAnimation() {
+  pushStyle();
+  imageMode(CENTER);
+  background(255);
+  int t1 = 4000;
+  int t2 = 6000;
+  int t3 = 8000;
+  float transparency = 0;
+
+  if (millis() >= t1) {
+    transparency = map(millis(), t1, t2, 0, 255);
+    tint(255, transparency);
+    //draw OpenBCI Logo Front & Center
+    image(cog, width/2, height/2, width/6, width/6);
+  }
+
+  //exit intro animation at t2
+  if (millis() >= t3) {
+    systemMode = 0;
+    controlPanel.isOpen = true;
+  }
+  popStyle();
 }

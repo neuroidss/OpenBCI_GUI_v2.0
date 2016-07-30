@@ -28,7 +28,7 @@ import java.util.*; //for Array.copyOfRange()
 
 //GUI plotting constants
 GUI_Manager gui;
-color bgColor = color(1, 18, 41);
+
 int navBarHeight = 32;
 float default_vertScale_uV = 200.0f;  //used for vertical scale of time-domain montage plot and frequency-domain FFT plot
 float displayTime_sec = 5f;    //define how much time is shown on the time-domain montage plot (and how much is used in the FFT plot?)
@@ -76,7 +76,9 @@ class GUI_Manager {
   GridBackground gbMontage, gbFFT;
   Button stopButton;
   PlotFontInfo fontInfo;
+  
   HeadPlot headPlot1;
+  
   Button[] chanButtons;
   // Button guiPageButton;
   //boolean showImpedanceButtons;
@@ -211,13 +213,6 @@ class GUI_Manager {
 
 
     //setup the FFT plot...bottom on left side
-    //float height_subplot = 0.5f*(available_top2bot-2*gutter_topbot);
-    // float[] axisFFT_relPos = { 
-    //   gutter_left, 
-    //   gutter_topbot+ up_down_split*available_top2bot + gutter_topbot+title_gutter + spacer_top, 
-    //   left_right_split-gutter_left-gutter_right, 
-    //   available_top2bot*(1.0f-up_down_split) - gutter_topbot-title_gutter - spacer_top
-    // }; //from left, from top, width, height
     float[] axisFFT_relPos = { 
       gutter_left + left_right_split, // + 0.1f, 
       up_down_split*available_top2bot + height_UI_tray + gutter_topbot, 
@@ -267,8 +262,6 @@ class GUI_Manager {
     //because as of 4/3/2014, you can only turn on/off the higher channels (the ones above chan 8)
     //by also turning off the corresponding lower channel.  So, deactiving channel 9 must also
     //deactivate channel 1, therefore, we might as well use just the 1 button.
-    // int xoffset = x + w + (int)(2*gutter_between_buttons*win_x);
-    // int xoffset = (int)(float(win_x)*gutter_left);
     int xoffset = (int)(float(win_x)*0.5f);
 
     w = 80;   //button width
@@ -784,6 +777,7 @@ class GUI_Manager {
     montageTrace.generate();  //graph doesn't update without this
     fftTrace.generate(); //graph doesn't update without this
     headPlot1.update();
+    //headPlot_widget.headPlot.update();
     cc.update();
 
     //update the text strings
@@ -972,201 +966,4 @@ class GUI_Manager {
     biasButton.setIsActive(false);
   }
  
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// 
-// Formerly Button.pde
-// This class creates and manages a button for use on the screen to trigger actions.
-//
-// Created: Chip Audette, Oct 2013.
-// Modified: Conor Russomanno, Oct 2014
-// 
-// Based on Processing's "Button" example code
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class Button {
-
-  int but_x, but_y, but_dx, but_dy;      // Position of square button
-  //int rectSize = 90;     // Diameter of rect
-
-  color currentColor;
-  color color_hover = color(127, 134, 143);//color(252, 221, 198); 
-  color color_pressed = color(150,170,200); //bgColor;
-  color color_highlight = color(102);
-  color color_notPressed = color(255); //color(227,118,37);
-  color buttonStrokeColor = bgColor;
-  color textColorActive = color(255);
-  color textColorNotActive = bgColor;
-  color rectHighlight;
-  boolean drawHand = false;
-  //boolean isMouseHere = false;
-  boolean buttonHasStroke = true;
-  boolean isActive = false;
-  boolean isDropdownButton = false;
-  boolean wasPressed = false;
-  public String but_txt;
-  PFont buttonFont = f2;
-
-  public Button(int x, int y, int w, int h, String txt, int fontSize) {
-    setup(x, y, w, h, txt);
-    //println(PFont.list()); //see which fonts are available
-    //font = createFont("SansSerif.plain",fontSize);
-    //font = createFont("Lucida Sans Regular",fontSize);
-    // font = createFont("Arial",fontSize);
-    //font = loadFont("SansSerif.plain.vlw");
-  }
-
-  public void setup(int x, int y, int w, int h, String txt) {
-    but_x = x;
-    but_y = y;
-    but_dx = w;
-    but_dy = h;
-    setString(txt);
-  }
-
-  public void setString(String txt) {
-    but_txt = txt;
-    //println("Button: setString: string = " + txt);
-  }
-
-  public boolean isActive() {
-    return isActive;
-  }
-
-  public void setIsActive(boolean val) {
-    isActive = val;
-  }
-
-  public void makeDropdownButton(boolean val) {
-    isDropdownButton = val;
-  }
-
-  public boolean isMouseHere() {
-    if ( overRect(but_x, but_y, but_dx, but_dy) ) {
-      cursor(HAND);
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  color getColor() {
-    if (isActive) {
-     currentColor = color_pressed;
-    } else if (isMouseHere()) {
-     currentColor = color_hover;
-    } else {    
-     currentColor = color_notPressed;
-    }
-    return currentColor;
-  }
-  
-  public void setCurrentColor(color _color){
-    currentColor = _color; 
-  }
-
-  public void setColorPressed(color _color) {
-    color_pressed = _color;
-  }
-  public void setColorNotPressed(color _color) {
-    color_notPressed = _color;
-  }
-
-  public void setStrokeColor(color _color) {
-    buttonStrokeColor = _color;
-  }
-
-  public void hasStroke(boolean _trueORfalse) {
-    buttonHasStroke = _trueORfalse;
-  }
-
-  boolean overRect(int x, int y, int width, int height) {
-    if (mouseX >= x && mouseX <= x+width && 
-      mouseY >= y && mouseY <= y+height) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  public void draw(int _x, int _y) {
-    but_x = _x;
-    but_y = _y;
-    draw();
-  }
-
-  public void draw() {
-    //draw the button
-    fill(getColor());
-    if (buttonHasStroke) {
-      stroke(buttonStrokeColor); //button border
-    } else {
-      noStroke();
-    }
-    // noStroke();
-    rect(but_x, but_y, but_dx, but_dy);
-
-    //draw the text
-    if (isActive) {
-      fill(textColorActive);
-    } else {
-      fill(textColorNotActive);
-    }
-    stroke(255);
-    textFont(buttonFont);  //load f2 ... from control panel 
-    textSize(12);
-    textAlign(CENTER, CENTER);
-    textLeading(round(0.9*(textAscent()+textDescent())));
-    //    int x1 = but_x+but_dx/2;
-    //    int y1 = but_y+but_dy/2;
-    int x1, y1;
-    //no auto wrap
-    x1 = but_x+but_dx/2;
-    y1 = but_y+but_dy/2;
-    text(but_txt, x1, y1);
-
-    //draw open/close arrow if it's a dropdown button
-    if (isDropdownButton) {
-      pushStyle();
-      fill(255);
-      noStroke();
-      // smooth();
-      // stroke(255);
-      // strokeWeight(1);
-      if (isActive) {
-        float point1x = but_x + (but_dx - ((3f*but_dy)/4f));
-        float point1y = but_y + but_dy/3f;
-        float point2x = but_x + (but_dx-(but_dy/4f));
-        float point2y = but_y + but_dy/3f;
-        float point3x = but_x + (but_dx - (but_dy/2f));
-        float point3y = but_y + (2f*but_dy)/3f;
-        triangle(point1x, point1y, point2x, point2y, point3x, point3y); //downward triangle, indicating open
-      } else {
-        float point1x = but_x + (but_dx - ((3f*but_dy)/4f));
-        float point1y = but_y + (2f*but_dy)/3f;
-        float point2x = but_x + (but_dx-(but_dy/4f));
-        float point2y = but_y + (2f*but_dy)/3f;
-        float point3x = but_x + (but_dx - (but_dy/2f));
-        float point3y = but_y + but_dy/3f;
-        triangle(point1x, point1y, point2x, point2y, point3x, point3y); //upward triangle, indicating closed
-      }
-      popStyle();
-    }
-
-    if (true) {
-      if (!isMouseHere() && drawHand) {
-        cursor(ARROW);
-        drawHand = false;
-        verbosePrint("don't draw hand");
-      }
-      //if cursor is over button change cursor icon to hand!
-      if (isMouseHere() && !drawHand) {
-        cursor(HAND);
-        drawHand = true;
-        verbosePrint("draw hand");
-      }
-    }
-  }
 };
